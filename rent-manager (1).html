@@ -1,0 +1,896 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Rent Ledger</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --paper:#EDE8DC;
+    --paper-line:#DCD5C4;
+    --card:#FFFDF7;
+    --ink:#24322C;
+    --ink-soft:#5B665F;
+    --ink-faint:#8C948C;
+    --brass:#9C6B2E;
+    --brass-dark:#7A5322;
+    --received:#3F6B4A;
+    --received-bg:#E4EEE5;
+    --pending:#B0503A;
+    --pending-bg:#F6E4DD;
+    --hairline:#D8D0BE;
+    --radius:10px;
+  }
+  *{box-sizing:border-box;}
+  body{
+    margin:0;
+    background:var(--paper);
+    color:var(--ink);
+    font-family:'Inter',sans-serif;
+    -webkit-font-smoothing:antialiased;
+    padding-bottom:3rem;
+  }
+  .wrap{max-width:640px;margin:0 auto;padding:1.25rem 1rem 0;}
+  .brand-row{display:flex;align-items:baseline;justify-content:space-between;margin-bottom:.15rem;}
+  h1{
+    font-family:'Fraunces',serif;
+    font-weight:600;
+    font-size:26px;
+    letter-spacing:-0.01em;
+    margin:0;
+    color:var(--ink);
+  }
+  .tagline{font-size:13px;color:var(--ink-soft);margin:0 0 1.1rem;}
+
+  .month-bar{
+    display:flex;align-items:center;justify-content:space-between;
+    background:var(--card);
+    border:1px solid var(--hairline);
+    border-radius:var(--radius);
+    padding:.55rem .5rem;
+    margin-bottom:.9rem;
+  }
+  .month-bar button{
+    background:none;border:none;color:var(--brass-dark);
+    font-size:20px;line-height:1;padding:.35rem .7rem;cursor:pointer;
+    border-radius:8px;
+  }
+  .month-bar button:active{background:var(--paper);}
+  .month-label{
+    font-family:'Fraunces',serif;font-weight:500;font-size:17px;
+  }
+
+  .summary{
+    display:grid;grid-template-columns:1fr 1fr;gap:.6rem;margin-bottom:1.3rem;
+  }
+  .stat{
+    background:var(--card);border:1px solid var(--hairline);border-radius:var(--radius);
+    padding:.75rem .85rem;
+  }
+  .stat .label{font-size:11.5px;color:var(--ink-soft);margin:0 0 .25rem;}
+  .stat .value{font-family:'Fraunces',serif;font-size:20px;font-weight:500;margin:0;}
+  .stat.paid .value{color:var(--received);}
+  .stat.due .value{color:var(--pending);}
+
+  .breakdown{
+    background:var(--card);border:1px solid var(--hairline);border-radius:var(--radius);
+    padding:.15rem .85rem;margin-bottom:1.3rem;
+  }
+  .breakdown-row{
+    display:flex;align-items:center;justify-content:space-between;
+    padding:.6rem 0;
+  }
+  .breakdown-row + .breakdown-row{border-top:1px solid var(--paper-line);}
+  .breakdown-label{font-size:13px;color:var(--ink-soft);}
+  .breakdown-value{font-family:'Fraunces',serif;font-size:15px;font-weight:500;color:var(--ink);}
+  .breakdown-value .of{font-family:'Inter',sans-serif;font-size:11px;font-weight:400;color:var(--ink-faint);margin:0 .1rem;}
+
+  .deductions-panel{
+    background:var(--card);border:1px solid var(--hairline);border-radius:var(--radius);
+    padding:.8rem .85rem;margin-bottom:1.3rem;
+  }
+  .ded-title{
+    font-family:'Fraunces',serif;font-weight:500;font-size:15px;margin:0 0 .6rem;
+  }
+  .ded-row{
+    display:flex;align-items:center;gap:.4rem;margin-bottom:.5rem;
+  }
+  .ded-row.common-row{border-bottom:1px solid var(--paper-line);padding-bottom:.7rem;margin-bottom:.7rem;}
+  .ded-common-label{flex:1;font-size:13px;color:var(--ink-soft);}
+  .ded-label{
+    flex:1;min-width:0;border:1px solid var(--hairline);background:var(--paper);border-radius:7px;
+    font-family:'Inter',sans-serif;font-size:13px;padding:.4rem .5rem;color:var(--ink);
+  }
+  .ded-label:focus{outline:none;border-color:var(--brass);}
+  .ded-amt{width:110px;flex:0 0 auto;}
+  .ded-amt input{font-size:13px;}
+  .ded-remove{
+    background:none;border:none;color:var(--pending);font-size:20px;line-height:1;
+    padding:.2rem .3rem;cursor:pointer;
+  }
+  .add-ded-btn{
+    display:block;width:100%;background:none;border:1px dashed var(--hairline);border-radius:7px;
+    color:var(--brass-dark);font-family:'Inter',sans-serif;font-size:13px;padding:.5rem;
+    cursor:pointer;margin-bottom:.7rem;
+  }
+  .net-row{
+    display:flex;align-items:baseline;justify-content:space-between;
+    padding-top:.6rem;border-top:1px solid var(--hairline);
+  }
+  .net-row span:first-child{font-size:13.5px;color:var(--ink-soft);}
+  .net-value{font-family:'Fraunces',serif;font-size:19px;font-weight:500;color:var(--brass-dark);}
+  .ded-note{font-size:10.5px;color:var(--ink-faint);margin:.5rem 0 0;}
+
+  .wing{margin-bottom:1.6rem;}
+  .wing-head{
+    display:flex;align-items:baseline;justify-content:space-between;
+    padding:0 .1rem .5rem;
+    border-bottom:1px solid var(--paper-line);
+    margin-bottom:.4rem;
+  }
+  .wing-head h2{
+    font-family:'Fraunces',serif;font-weight:500;font-size:16px;margin:0;
+  }
+  .wing-head .count{font-size:12px;color:var(--ink-soft);}
+
+  .room{
+    background:var(--card);
+    border:1px solid var(--hairline);
+    border-radius:var(--radius);
+    padding:.7rem .8rem;
+    margin-bottom:.5rem;
+  }
+  .room-top{
+    display:flex;align-items:center;justify-content:space-between;margin-bottom:.55rem;
+  }
+  .room-num{
+    font-family:'Fraunces',serif;font-weight:500;font-size:16px;
+  }
+  .status-btn{
+    border:none;border-radius:20px;font-size:12px;font-weight:500;
+    padding:.32rem .75rem;cursor:pointer;font-family:'Inter',sans-serif;
+  }
+  .status-btn.received{background:var(--received-bg);color:var(--received);}
+  .status-btn.pending{background:var(--pending-bg);color:var(--pending);}
+
+  .name-field{margin-bottom:.55rem;}
+  .name-field label{font-size:10.5px;color:var(--ink-faint);margin-bottom:.2rem;display:block;}
+  .name-field input{
+    width:100%;border:1px solid var(--hairline);background:var(--paper);border-radius:7px;
+    font-family:'Inter',sans-serif;font-size:14px;padding:.45rem .55rem;color:var(--ink);
+  }
+  .name-field input:focus{outline:none;border-color:var(--brass);}
+  .id-fields{display:grid;grid-template-columns:1fr 1fr;gap:.5rem;margin-bottom:.55rem;}
+  .id-fields .name-field{margin-bottom:0;}
+  .room-fields{display:grid;grid-template-columns:1fr 1fr 1fr;gap:.5rem;}
+  .field{display:flex;flex-direction:column;}
+  .field label{font-size:10.5px;color:var(--ink-faint);margin-bottom:.2rem;}
+  .field .amt-row{display:flex;align-items:center;background:var(--paper);border:1px solid var(--hairline);border-radius:7px;padding:0 .4rem;}
+  .field .amt-row span{font-size:12px;color:var(--ink-faint);}
+  .field input{
+    border:none;background:transparent;font-family:'Inter',sans-serif;
+    font-size:14px;padding:.4rem .2rem;width:100%;color:var(--ink);
+    -moz-appearance:textfield;
+  }
+  .field input::-webkit-outer-spin-button,
+  .field input::-webkit-inner-spin-button{-webkit-appearance:none;margin:0;}
+  .field input:focus{outline:none;}
+  .field.total .amt-row{background:transparent;border:none;padding:0;}
+  .field.total span.num{font-family:'Fraunces',serif;font-size:15px;font-weight:500;padding:.4rem 0;}
+  .field.total label{color:var(--ink-soft);}
+
+  .paid-on{font-size:10.5px;color:var(--received);margin:.4rem 0 0;}
+
+  .actions-row{display:flex;gap:.5rem;margin-bottom:.9rem;}
+  .action-btn{
+    flex:1;background:var(--card);border:1px solid var(--hairline);border-radius:8px;
+    color:var(--brass-dark);font-family:'Inter',sans-serif;font-size:12.5px;font-weight:500;
+    padding:.55rem .4rem;cursor:pointer;
+  }
+  .action-btn:active{background:var(--paper);}
+  .action-btn:disabled{opacity:.6;}
+
+  .fill-link{
+    display:block;width:100%;background:none;border:none;text-align:center;
+    color:var(--ink-faint);text-decoration:underline;font-size:11.5px;
+    font-family:'Inter',sans-serif;cursor:pointer;padding:0 0 1rem;
+  }
+
+  .load-notebook-btn{
+    display:block;width:100%;background:var(--brass);border:none;border-radius:var(--radius);
+    color:#FFFDF7;font-family:'Inter',sans-serif;font-size:13.5px;font-weight:500;
+    padding:.7rem .6rem;cursor:pointer;margin-bottom:.9rem;
+  }
+  .load-notebook-btn:active{background:var(--brass-dark);}
+  .loaded-msg{font-size:12px;color:var(--received);text-align:center;margin:-0.5rem 0 .9rem;}
+
+  .yearly-panel{
+    background:var(--card);border:1px solid var(--hairline);border-radius:var(--radius);
+    padding:.8rem .85rem;margin-bottom:1.2rem;
+  }
+  .yearly-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:.6rem;}
+  .yearly-head .year-label{font-family:'Fraunces',serif;font-weight:500;font-size:15px;}
+  .yearly-head button{background:none;border:none;color:var(--brass-dark);font-size:18px;cursor:pointer;padding:.2rem .5rem;}
+  table.yearly-table{width:100%;border-collapse:collapse;font-size:12.5px;min-width:560px;}
+  .yearly-scroll{overflow-x:auto;-webkit-overflow-scrolling:touch;}
+  table.yearly-table th{
+    text-align:right;color:var(--ink-faint);font-weight:500;font-size:10.5px;
+    padding:.2rem .3rem;border-bottom:1px solid var(--paper-line);
+  }
+  table.yearly-table th:first-child{text-align:left;}
+  table.yearly-table td{text-align:right;padding:.32rem .3rem;border-bottom:1px solid var(--paper-line);}
+  table.yearly-table td:first-child{text-align:left;color:var(--ink);}
+  table.yearly-table tr.total-row td{font-weight:500;border-bottom:none;border-top:1px solid var(--hairline);padding-top:.5rem;}
+  .yearly-note{font-size:10.5px;color:var(--ink-faint);margin:.6rem 0 0;}
+  .yearly-loading{font-size:13px;color:var(--ink-soft);padding:.5rem 0;}
+
+  .footnote{
+    text-align:center;font-size:11.5px;color:var(--ink-faint);margin-top:1.5rem;
+  }
+  .reset{
+    display:block;margin:.6rem auto 0;background:none;border:none;
+    color:var(--ink-faint);text-decoration:underline;font-size:11.5px;cursor:pointer;
+  }
+  .loading{text-align:center;padding:3rem 0;color:var(--ink-soft);font-size:14px;}
+</style>
+</head>
+<body>
+<div class="wrap" id="app">
+  <div class="brand-row"><h1>Rent Ledger</h1></div>
+  <p class="tagline">23 rooms · Wing A &amp; Wing B</p>
+  <div class="loading" id="loading">Loading your ledger…</div>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+
+<script src="https://www.gstatic.com/firebasejs/10.13.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.13.0/firebase-database-compat.js"></script>
+<script>
+/* Firebase-backed storage so data syncs across every phone that opens
+   this same page. Replaces the Claude-artifact-only window.storage API. */
+const firebaseConfig = {
+  apiKey: "AIzaSyA1JijnqtxYeIuKSjztcNlBb7GbcC8JPTg",
+  authDomain: "rent-manager-c7428.firebaseapp.com",
+  databaseURL: "https://rent-manager-c7428-default-rtdb.asia-southeast1.firebasedatabase.app",
+  projectId: "rent-manager-c7428",
+  storageBucket: "rent-manager-c7428.firebasestorage.app",
+  messagingSenderId: "432410647644",
+  appId: "1:432410647644:web:e97fa3f4afab6896649a99"
+};
+
+firebase.initializeApp(firebaseConfig);
+const db = firebase.database();
+
+// Realtime Database keys can't contain . # $ [ ] /
+function fbSafeKey(key){
+  return key.replace(/[.#$\[\]\/]/g, '_');
+}
+
+(function () {
+  window.storage = {
+    async get(key) {
+      const snap = await db.ref('rent-manager/' + fbSafeKey(key)).once('value');
+      const value = snap.val();
+      if (value === null || value === undefined) throw new Error("Storage key not found");
+      return { value };
+    },
+    async set(key, value) {
+      await db.ref('rent-manager/' + fbSafeKey(key)).set(value);
+      return { value };
+    },
+    async delete(key) {
+      await db.ref('rent-manager/' + fbSafeKey(key)).remove();
+      return true;
+    }
+  };
+})();
+</script>
+
+<script>
+const CURRENCY = '₹';
+const WINGS = { A: 12, B: 11 };
+const MONTH_NAMES = ['January','February','March','April','May','June','July','August','September','October','November','December'];
+
+const NOTEBOOK_DATA = {
+  A: [
+    { name:'Pawan Madan Rathod', rent:5500, electricity:240 },
+    { name:'Laxman Rathod', rent:5500, electricity:620 },
+    { name:'Omprakash Gade', rent:5500, electricity:370 },
+    { name:'Balaynath Rathod', rent:5500, electricity:680 },
+    { name:'Mithu Ingale', rent:5500, electricity:800 },
+    { name:'Gaurav Jadhav', rent:5500, electricity:260 },
+    { name:'Vilas Pawar', rent:5000, electricity:200 },
+    { name:'Dnyaneshwar Jadhav', rent:5500, electricity:380 },
+    { name:'Jitendra', rent:5500, electricity:230 },
+    { name:'Shivraj', rent:5000, electricity:260 },
+    { name:'Yogesh Dubey', rent:5500, electricity:270 },
+    { name:'Suresh Dagara', rent:5500, electricity:110 }
+  ],
+  B: [
+    { name:'Kailash Anand', rent:5500, electricity:750 },
+    { name:'Aman', rent:5000, electricity:100 },
+    { name:'Kashinath Muthe', rent:5000, electricity:30 },
+    { name:'Ganesh Chauhan', rent:5500, electricity:460 },
+    { name:'Engle', rent:5500, electricity:150 },
+    { name:'Sushil Wagh', rent:5500, electricity:290 },
+    { name:'Anil Jadhav', rent:5500, electricity:210 },
+    { name:'Anokhar Jadhav', rent:5500, electricity:1410 },
+    { name:'Raju Roy', rent:5500, electricity:80 },
+    { name:'Nitesh', rent:5500, electricity:190 },
+    { name:'', rent:6000, electricity:200 }
+  ]
+};
+
+let rooms = null;
+let monthRecord = null;
+let currentDate = new Date();
+currentDate.setDate(1);
+let showYearly = false;
+let yearlyYear = new Date().getFullYear();
+let yearlyCache = {};
+let yearlyLoading = false;
+
+function monthKey(d){
+  return `month:${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}`;
+}
+
+function defaultRooms(){
+  const r = {A:[], B:[]};
+  for(const wing of Object.keys(WINGS)){
+    for(let i=1;i<=WINGS[wing];i++){
+      const src = NOTEBOOK_DATA[wing] && NOTEBOOK_DATA[wing][i-1];
+      r[wing].push({
+        id: wing+i, number: i,
+        rent: src ? src.rent : 0,
+        name: src ? src.name : '',
+        aadhar: '', mobile: ''
+      });
+    }
+  }
+  return r;
+}
+
+function normalizeRooms(r){
+  for(const wing of Object.keys(WINGS)){
+    if(!Array.isArray(r[wing])) r[wing] = [];
+    const target = WINGS[wing];
+    while(r[wing].length < target){
+      const i = r[wing].length + 1;
+      r[wing].push({ id: wing+i, number: i, rent: 0, name: '', aadhar: '', mobile: '' });
+    }
+    if(r[wing].length > target) r[wing] = r[wing].slice(0, target);
+    r[wing].forEach((room, idx) => {
+      room.number = idx + 1;
+      room.id = wing + room.number;
+      if(typeof room.name !== 'string') room.name = '';
+      if(typeof room.aadhar !== 'string') room.aadhar = '';
+      if(typeof room.mobile !== 'string') room.mobile = '';
+      if(typeof room.rent !== 'number') room.rent = Number(room.rent)||0;
+    });
+  }
+  return r;
+}
+
+async function loadRooms(){
+  try{
+    const res = await window.storage.get('rooms-config', true);
+    rooms = JSON.parse(res.value);
+    normalizeRooms(rooms);
+  }catch(e){
+    rooms = defaultRooms();
+    try{ await window.storage.set('rooms-config', JSON.stringify(rooms), true); }catch(e2){}
+  }
+}
+
+async function saveRooms(){
+  try{ await window.storage.set('rooms-config', JSON.stringify(rooms), true); }
+  catch(e){ console.error('save rooms failed', e); }
+  yearlyCache = {};
+}
+
+async function loadMonth(key){
+  try{
+    const res = await window.storage.get(key, true);
+    monthRecord = JSON.parse(res.value);
+  }catch(e){
+    monthRecord = {};
+  }
+}
+
+async function saveMonth(key){
+  try{ await window.storage.set(key, JSON.stringify(monthRecord), true); }
+  catch(e){ console.error('save month failed', e); }
+  yearlyCache = {};
+}
+
+function getRoomEntry(id){
+  if(!monthRecord[id]){
+    monthRecord[id] = { electricity: 0, status: 'pending', paidOn: null };
+  }
+  return monthRecord[id];
+}
+
+function getMeta(){
+  if(!monthRecord._meta){
+    monthRecord._meta = { deductions: [], commonElectricity: 0 };
+  }
+  if(!Array.isArray(monthRecord._meta.deductions)) monthRecord._meta.deductions = [];
+  if(typeof monthRecord._meta.commonElectricity !== 'number') monthRecord._meta.commonElectricity = Number(monthRecord._meta.commonElectricity)||0;
+  return monthRecord._meta;
+}
+
+function fmt(n){
+  const v = Math.round(Number(n)||0);
+  return v.toLocaleString('en-IN');
+}
+
+async function getMonthRecord(key){
+  try{
+    const res = await window.storage.get(key, true);
+    return JSON.parse(res.value);
+  }catch(e){
+    return {};
+  }
+}
+
+async function getYearData(year){
+  if(yearlyCache[year]) return yearlyCache[year];
+  const months = [];
+  for(let m=1;m<=12;m++){
+    const key = `month:${year}-${String(m).padStart(2,'0')}`;
+    const rec = await getMonthRecord(key);
+    let expected = 0, collected = 0, paidRooms = 0;
+    let rentExpected = 0, rentCollected = 0, elecExpected = 0, elecCollected = 0;
+    const roomRows = [];
+    for(const wing of Object.keys(WINGS)){
+      rooms[wing].forEach(room => {
+        const entry = rec[room.id] || { electricity: 0, status: 'pending', paidOn: null };
+        const rentAmt = Number(room.rent)||0;
+        const elecAmt = Number(entry.electricity)||0;
+        const total = rentAmt + elecAmt;
+        expected += total;
+        rentExpected += rentAmt;
+        elecExpected += elecAmt;
+        if(entry.status === 'received'){
+          collected += total; paidRooms++;
+          rentCollected += rentAmt; elecCollected += elecAmt;
+        }
+        roomRows.push({
+          wing, room: `${wing}${room.number}`, tenant: room.name || '',
+          aadhar: room.aadhar || '', mobile: room.mobile || '',
+          rent: rentAmt, electricity: elecAmt,
+          total, status: entry.status === 'received' ? 'Received' : 'Pending',
+          paidOn: entry.paidOn ? new Date(entry.paidOn).toLocaleDateString('en-IN') : ''
+        });
+      });
+    }
+    months.push({
+      month: m, label: MONTH_NAMES[m-1], expected, collected, pending: expected-collected, paidRooms,
+      rentExpected, rentCollected, elecExpected, elecCollected, roomRows,
+      deductions: (rec._meta && Array.isArray(rec._meta.deductions)) ? rec._meta.deductions : [],
+      commonElectricity: (rec._meta && Number(rec._meta.commonElectricity)) || 0,
+      get deductionsSum(){ return this.deductions.reduce((s,d)=>s+(Number(d.amount)||0),0); },
+      get netPayable(){ return this.collected - this.deductionsSum - this.commonElectricity; }
+    });
+  }
+  yearlyCache[year] = months;
+  return months;
+}
+
+function render(){
+  const app = document.getElementById('app');
+  const key = monthKey(currentDate);
+  let totalExpected = 0, totalCollected = 0, roomsPaid = 0;
+  let rentExpected = 0, rentCollected = 0, elecExpected = 0, elecCollected = 0;
+
+  const wingsHtml = Object.keys(WINGS).map(wing => {
+    const roomsHtml = rooms[wing].map(room => {
+      const entry = getRoomEntry(room.id);
+      const rentAmt = Number(room.rent)||0;
+      const elecAmt = Number(entry.electricity)||0;
+      const total = rentAmt + elecAmt;
+      totalExpected += total;
+      rentExpected += rentAmt;
+      elecExpected += elecAmt;
+      if(entry.status === 'received'){
+        totalCollected += total; roomsPaid++;
+        rentCollected += rentAmt; elecCollected += elecAmt;
+      }
+      const paidOnText = entry.status === 'received' && entry.paidOn
+        ? `<p class="paid-on">Received ${new Date(entry.paidOn).toLocaleDateString('en-IN',{day:'numeric',month:'short'})}</p>` : '';
+      return `
+        <div class="room" data-room="${room.id}">
+          <div class="room-top">
+            <span class="room-num">${wing}${room.number}</span>
+            <button class="status-btn ${entry.status}" data-action="toggle" data-room="${room.id}">
+              ${entry.status === 'received' ? 'Received' : 'Pending'}
+            </button>
+          </div>
+          <div class="field name-field">
+            <label>Tenant name</label>
+            <input type="text" data-field="name" data-room="${room.id}" value="${(room.name||'').replace(/"/g,'&quot;')}" placeholder="Add name">
+          </div>
+          <div class="id-fields">
+            <div class="field name-field">
+              <label>Aadhaar number</label>
+              <input type="text" inputmode="numeric" maxlength="12" data-field="aadhar" data-room="${room.id}" value="${(room.aadhar||'').replace(/"/g,'&quot;')}" placeholder="12-digit number">
+            </div>
+            <div class="field name-field">
+              <label>Mobile number</label>
+              <input type="tel" inputmode="numeric" maxlength="10" data-field="mobile" data-room="${room.id}" value="${(room.mobile||'').replace(/"/g,'&quot;')}" placeholder="10-digit number">
+            </div>
+          </div>
+          <div class="room-fields">
+            <div class="field">
+              <label>Rent</label>
+              <div class="amt-row"><span>${CURRENCY}</span><input type="number" min="0" inputmode="numeric" data-field="rent" data-room="${room.id}" value="${room.rent||''}" placeholder="0"></div>
+            </div>
+            <div class="field">
+              <label>Electricity</label>
+              <div class="amt-row"><span>${CURRENCY}</span><input type="number" min="0" inputmode="numeric" data-field="electricity" data-room="${room.id}" value="${entry.electricity||''}" placeholder="0"></div>
+            </div>
+            <div class="field total">
+              <label>Total</label>
+              <div class="amt-row"><span class="num">${CURRENCY}${fmt(total)}</span></div>
+            </div>
+          </div>
+          ${paidOnText}
+        </div>`;
+    }).join('');
+    return `
+      <div class="wing">
+        <div class="wing-head"><h2>Wing ${wing}</h2><span class="count">${WINGS[wing]} rooms</span></div>
+        ${roomsHtml}
+      </div>`;
+  }).join('');
+
+  const totalPending = totalExpected - totalCollected;
+  const meta = getMeta();
+  const deductionsSum = meta.deductions.reduce((s,d) => s + (Number(d.amount)||0), 0);
+  const netPayable = totalCollected - deductionsSum - meta.commonElectricity;
+
+  const deductionRowsHtml = meta.deductions.map((d, idx) => `
+    <div class="ded-row" data-idx="${idx}">
+      <input type="text" class="ded-label" data-ded-field="label" data-idx="${idx}" value="${(d.label||'').replace(/"/g,'&quot;')}" placeholder="e.g. Cleaning">
+      <div class="amt-row ded-amt"><span>${CURRENCY}</span><input type="number" min="0" inputmode="numeric" data-ded-field="amount" data-idx="${idx}" value="${d.amount||''}" placeholder="0"></div>
+      <button class="ded-remove" data-action="remove-ded" data-idx="${idx}" aria-label="Remove deduction">×</button>
+    </div>`).join('');
+
+  app.innerHTML = `
+    <div class="brand-row"><h1>Rent Ledger</h1></div>
+    <p class="tagline">23 rooms · Wing A &amp; Wing B</p>
+
+    <div class="month-bar">
+      <button data-action="prev" aria-label="Previous month">‹</button>
+      <span class="month-label">${MONTH_NAMES[currentDate.getMonth()]} ${currentDate.getFullYear()}</span>
+      <button data-action="next" aria-label="Next month">›</button>
+    </div>
+
+    <button class="load-notebook-btn" data-action="fill-sample">Load tenant names, rent &amp; electricity from notebook</button>
+    ${notebookLoadedMsg ? '<p class="loaded-msg">Loaded from notebook.</p>' : ''}
+
+    <div class="actions-row">
+      <button class="action-btn" data-action="toggle-yearly">${showYearly ? 'Hide yearly summary' : 'Yearly summary'}</button>
+      <button class="action-btn" data-action="export-excel">Export to Excel</button>
+    </div>
+
+    <div id="yearly-panel"></div>
+
+    <div class="summary">
+      <div class="stat paid"><p class="label">Collected</p><p class="value">${CURRENCY}${fmt(totalCollected)}</p></div>
+      <div class="stat due"><p class="label">Pending</p><p class="value">${CURRENCY}${fmt(totalPending)}</p></div>
+      <div class="stat"><p class="label">Rooms paid</p><p class="value">${roomsPaid} / 23</p></div>
+      <div class="stat"><p class="label">Expected total</p><p class="value">${CURRENCY}${fmt(totalExpected)}</p></div>
+    </div>
+
+    <div class="breakdown">
+      <div class="breakdown-row">
+        <span class="breakdown-label">Rent</span>
+        <span class="breakdown-value">${CURRENCY}${fmt(rentCollected)} <span class="of">of</span> ${CURRENCY}${fmt(rentExpected)}</span>
+      </div>
+      <div class="breakdown-row">
+        <span class="breakdown-label">Electricity</span>
+        <span class="breakdown-value">${CURRENCY}${fmt(elecCollected)} <span class="of">of</span> ${CURRENCY}${fmt(elecExpected)}</span>
+      </div>
+    </div>
+
+    <div class="deductions-panel">
+      <h3 class="ded-title">Deductions</h3>
+
+      <div class="ded-row common-row">
+        <span class="ded-common-label">Common building electricity</span>
+        <div class="amt-row ded-amt"><span>${CURRENCY}</span><input type="number" min="0" inputmode="numeric" id="common-elec-input" value="${meta.commonElectricity||''}" placeholder="0"></div>
+      </div>
+
+      ${deductionRowsHtml}
+
+      <button class="add-ded-btn" data-action="add-deduction">+ Add deduction</button>
+
+      <div class="net-row">
+        <span>Net payable</span>
+        <span class="net-value">${CURRENCY}${fmt(netPayable)}</span>
+      </div>
+      <p class="ded-note">Collected (${CURRENCY}${fmt(totalCollected)}) minus deductions (${CURRENCY}${fmt(deductionsSum)}) and common electricity (${CURRENCY}${fmt(meta.commonElectricity)}).</p>
+    </div>
+
+    ${wingsHtml}
+
+    <p class="footnote">Shared with everyone who has this link · rent saved per room, electricity and status saved per month.</p>
+  `;
+
+  attachHandlers();
+}
+
+async function renderYearlyPanel(){
+  const panel = document.getElementById('yearly-panel');
+  if(!panel) return;
+  if(!showYearly){ panel.innerHTML = ''; return; }
+
+  panel.innerHTML = `<div class="yearly-panel"><p class="yearly-loading">Loading yearly summary…</p></div>`;
+  const data = await getYearData(yearlyYear);
+  let yRent = 0, yElec = 0, yCollected = 0, yExpected = 0, yNet = 0;
+  const rows = data.map(m => {
+    yRent += m.rentExpected; yElec += m.elecExpected;
+    yExpected += m.expected; yCollected += m.collected; yNet += m.netPayable;
+    return `<tr>
+      <td>${m.label}</td>
+      <td>${CURRENCY}${fmt(m.rentExpected)}</td>
+      <td>${CURRENCY}${fmt(m.elecExpected)}</td>
+      <td>${CURRENCY}${fmt(m.collected)}</td>
+      <td>${CURRENCY}${fmt(m.pending)}</td>
+      <td>${CURRENCY}${fmt(m.netPayable)}</td>
+      <td>${m.paidRooms}/23</td>
+    </tr>`;
+  }).join('');
+
+  panel.innerHTML = `
+    <div class="yearly-panel">
+      <div class="yearly-head">
+        <button data-action="prev-year" aria-label="Previous year">‹</button>
+        <span class="year-label">${yearlyYear}</span>
+        <button data-action="next-year" aria-label="Next year">›</button>
+      </div>
+      <div class="yearly-scroll">
+      <table class="yearly-table">
+        <thead><tr><th>Month</th><th>Rent</th><th>Electric</th><th>Collected</th><th>Pending</th><th>Net</th><th>Paid</th></tr></thead>
+        <tbody>
+          ${rows}
+          <tr class="total-row"><td>Total</td><td>${CURRENCY}${fmt(yRent)}</td><td>${CURRENCY}${fmt(yElec)}</td><td>${CURRENCY}${fmt(yCollected)}</td><td>${CURRENCY}${fmt(yExpected-yCollected)}</td><td>${CURRENCY}${fmt(yNet)}</td><td></td></tr>
+        </tbody>
+      </table>
+      </div>
+      <p class="yearly-note">Net = collected minus deductions and common electricity. Rent uses each room's current value for every month, since rent isn't tracked historically.</p>
+    </div>`;
+
+  panel.querySelector('[data-action="prev-year"]').addEventListener('click', async () => {
+    yearlyYear--; await renderYearlyPanel();
+  });
+  panel.querySelector('[data-action="next-year"]').addEventListener('click', async () => {
+    yearlyYear++; await renderYearlyPanel();
+  });
+}
+
+async function exportToExcel(btn){
+  const originalText = btn.textContent;
+  btn.disabled = true;
+  btn.textContent = 'Preparing…';
+  try{
+    const data = await getYearData(yearlyYear);
+    const wb = XLSX.utils.book_new();
+
+    const summaryRows = [['Month','Rent','Electricity','Expected','Collected','Pending','Common electricity','Deductions','Net payable','Rooms paid']];
+    data.forEach(m => summaryRows.push([m.label, m.rentExpected, m.elecExpected, m.expected, m.collected, m.pending, m.commonElectricity, m.deductionsSum, m.netPayable, `${m.paidRooms}/23`]));
+    const yExpected = data.reduce((s,m)=>s+m.expected,0);
+    const yCollected = data.reduce((s,m)=>s+m.collected,0);
+    const yRent = data.reduce((s,m)=>s+m.rentExpected,0);
+    const yElec = data.reduce((s,m)=>s+m.elecExpected,0);
+    const yCommon = data.reduce((s,m)=>s+m.commonElectricity,0);
+    const yDed = data.reduce((s,m)=>s+m.deductionsSum,0);
+    const yNet = data.reduce((s,m)=>s+m.netPayable,0);
+    summaryRows.push(['Total', yRent, yElec, yExpected, yCollected, yExpected-yCollected, yCommon, yDed, yNet, '']);
+    const summarySheet = XLSX.utils.aoa_to_sheet(summaryRows);
+    XLSX.utils.book_append_sheet(wb, summarySheet, `${yearlyYear} summary`);
+
+    data.forEach(m => {
+      const rows = [['Wing','Room','Tenant','Aadhaar','Mobile','Rent','Electricity','Total','Status','Paid on']];
+      m.roomRows.forEach(r => rows.push([r.wing, r.room, r.tenant, r.aadhar, r.mobile, r.rent, r.electricity, r.total, r.status, r.paidOn]));
+      const sheet = XLSX.utils.aoa_to_sheet(rows);
+      XLSX.utils.book_append_sheet(wb, sheet, m.label.slice(0,3) + ' ' + String(yearlyYear).slice(2));
+    });
+
+    XLSX.writeFile(wb, `Rent-Ledger-${yearlyYear}.xlsx`);
+  }catch(e){
+    console.error('export failed', e);
+    alert('Export failed. Please try again.');
+  }finally{
+    btn.disabled = false;
+    btn.textContent = originalText;
+  }
+}
+
+let notebookConfirmPending = false;
+let notebookConfirmTimer = null;
+let notebookLoadedMsg = false;
+
+async function fillNotebookData(btn){
+  if(!notebookConfirmPending){
+    notebookConfirmPending = true;
+    if(btn){ btn.textContent = 'Tap again to confirm — this overwrites current entries'; }
+    clearTimeout(notebookConfirmTimer);
+    notebookConfirmTimer = setTimeout(() => {
+      notebookConfirmPending = false;
+      if(btn){ btn.textContent = 'Load tenant names, rent & electricity from notebook'; }
+    }, 4000);
+    return;
+  }
+
+  clearTimeout(notebookConfirmTimer);
+  notebookConfirmPending = false;
+
+  for(const wing of Object.keys(WINGS)){
+    rooms[wing].forEach((room, idx) => {
+      const src = NOTEBOOK_DATA[wing] && NOTEBOOK_DATA[wing][idx];
+      if(!src) return;
+      room.name = src.name;
+      room.rent = src.rent;
+      const entry = getRoomEntry(room.id);
+      entry.electricity = src.electricity;
+    });
+  }
+
+  notebookLoadedMsg = true;
+  render();
+  await saveRooms();
+  await saveMonth(monthKey(currentDate));
+}
+
+function attachHandlers(){
+  const app = document.getElementById('app');
+
+  app.querySelectorAll('[data-action="prev"]').forEach(b => b.addEventListener('click', async () => {
+    currentDate.setMonth(currentDate.getMonth()-1);
+    await loadMonth(monthKey(currentDate));
+    render();
+  }));
+  app.querySelectorAll('[data-action="next"]').forEach(b => b.addEventListener('click', async () => {
+    currentDate.setMonth(currentDate.getMonth()+1);
+    await loadMonth(monthKey(currentDate));
+    render();
+  }));
+
+  app.querySelectorAll('[data-action="toggle"]').forEach(b => b.addEventListener('click', async () => {
+    const id = b.getAttribute('data-room');
+    const entry = getRoomEntry(id);
+    if(entry.status === 'received'){
+      entry.status = 'pending';
+      entry.paidOn = null;
+    }else{
+      entry.status = 'received';
+      entry.paidOn = new Date().toISOString();
+    }
+    render();
+    await saveMonth(monthKey(currentDate));
+  }));
+
+  app.querySelectorAll('input[data-field="name"]').forEach(inp => {
+    inp.addEventListener('change', async () => {
+      const id = inp.getAttribute('data-room');
+      const room = [...rooms.A, ...rooms.B].find(r => r.id === id);
+      room.name = inp.value.trim();
+      render();
+      await saveRooms();
+    });
+  });
+
+  app.querySelectorAll('input[data-field="aadhar"]').forEach(inp => {
+    inp.addEventListener('change', async () => {
+      const id = inp.getAttribute('data-room');
+      const room = [...rooms.A, ...rooms.B].find(r => r.id === id);
+      room.aadhar = inp.value.replace(/\D/g,'').slice(0,12);
+      render();
+      await saveRooms();
+    });
+  });
+
+  app.querySelectorAll('input[data-field="mobile"]').forEach(inp => {
+    inp.addEventListener('change', async () => {
+      const id = inp.getAttribute('data-room');
+      const room = [...rooms.A, ...rooms.B].find(r => r.id === id);
+      room.mobile = inp.value.replace(/\D/g,'').slice(0,10);
+      render();
+      await saveRooms();
+    });
+  });
+
+  app.querySelectorAll('input[data-field="rent"]').forEach(inp => {
+    inp.addEventListener('change', async () => {
+      const id = inp.getAttribute('data-room');
+      const room = [...rooms.A, ...rooms.B].find(r => r.id === id);
+      room.rent = Number(inp.value) || 0;
+      render();
+      await saveRooms();
+    });
+  });
+
+  app.querySelectorAll('input[data-field="electricity"]').forEach(inp => {
+    inp.addEventListener('change', async () => {
+      const id = inp.getAttribute('data-room');
+      const entry = getRoomEntry(id);
+      entry.electricity = Number(inp.value) || 0;
+      render();
+      await saveMonth(monthKey(currentDate));
+    });
+  });
+
+  app.querySelectorAll('[data-action="toggle-yearly"]').forEach(b => b.addEventListener('click', () => {
+    showYearly = !showYearly;
+    render();
+  }));
+
+  app.querySelectorAll('[data-action="export-excel"]').forEach(b => b.addEventListener('click', () => {
+    exportToExcel(b);
+  }));
+
+  app.querySelectorAll('[data-action="fill-sample"]').forEach(b => b.addEventListener('click', () => {
+    fillNotebookData(b);
+  }));
+
+  const commonElecInput = document.getElementById('common-elec-input');
+  if(commonElecInput){
+    commonElecInput.addEventListener('change', async () => {
+      const meta = getMeta();
+      meta.commonElectricity = Number(commonElecInput.value) || 0;
+      render();
+      await saveMonth(monthKey(currentDate));
+    });
+  }
+
+  app.querySelectorAll('[data-action="add-deduction"]').forEach(b => b.addEventListener('click', async () => {
+    const meta = getMeta();
+    meta.deductions.push({ label: '', amount: 0 });
+    render();
+    await saveMonth(monthKey(currentDate));
+  }));
+
+  app.querySelectorAll('[data-action="remove-ded"]').forEach(b => b.addEventListener('click', async () => {
+    const idx = Number(b.getAttribute('data-idx'));
+    const meta = getMeta();
+    meta.deductions.splice(idx, 1);
+    render();
+    await saveMonth(monthKey(currentDate));
+  }));
+
+  app.querySelectorAll('input[data-ded-field="label"]').forEach(inp => {
+    inp.addEventListener('change', async () => {
+      const idx = Number(inp.getAttribute('data-idx'));
+      const meta = getMeta();
+      if(meta.deductions[idx]) meta.deductions[idx].label = inp.value;
+      render();
+      await saveMonth(monthKey(currentDate));
+    });
+  });
+
+  app.querySelectorAll('input[data-ded-field="amount"]').forEach(inp => {
+    inp.addEventListener('change', async () => {
+      const idx = Number(inp.getAttribute('data-idx'));
+      const meta = getMeta();
+      if(meta.deductions[idx]) meta.deductions[idx].amount = Number(inp.value) || 0;
+      render();
+      await saveMonth(monthKey(currentDate));
+    });
+  });
+
+  renderYearlyPanel();
+}
+
+(async function init(){
+  await loadRooms();
+  await loadMonth(monthKey(currentDate));
+  render();
+})();
+</script>
+</body>
+</html>
